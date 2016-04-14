@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+    
+    body {
+        background: url('bg4.jpg');
+    }
+    
+    #pie {
+        margin: 10px auto;
+        background: white;
+        max-width: 1010px;
+        border-radius: 10px;
+    }
+    
+    .arc path {
+        cursor: pointer;
+        stroke: #fff;
+    }
+    
+    .arc:hover path {
+        cursor: pointer;
+        stroke: #fff;
+        stroke-width: 4px;
+    }
+    
+    .win {
+        fill: #225D23;
+    }
+    
+    .loss {
+        fill: #5a2910;
+    }
+    
+    text {
+        font-size: 2em;
+        fill: white;
+        text-anchor: middle;
+    }
+    
+    .arc:hover text {
+        font-size: 3em;
+    }
+    
+    .rate circle {
+        fill: #6d6e70;
+        stroke: #fff;
+        stroke-width: 2px;
+    }
+    
+    .rate text {
+        font-size: 1.5em;
+        fill: white;
+        text-anchor: middle;
+    }
+    
+    .rate:hover circle {
+        stroke-width: 4px;
+    }
+    
+    .rate:hover text {
+        font-size: 2em;
+    }
+    </style>
+<script src="//d3js.org/d3.v3.min.js"></script>
+</head>
+<body>
+<div id="pie">
+</div>
+<script>
+var width = 960,
+    height = 500,
+    radius = Math.min(width, height) / 2,
+    innerRadius = radius *2/5;
+
+var svg = d3.select("#pie").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+  .append("g")
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+d3.json("data.json", function(error, data){
+    if(error) throw error;
+    
+    winLossRate = {
+        win: { match: 0, set: 0, games: 0 },
+        loss: { match: 0, set: 0, games: 0 },
+        accessor: "match"
+    }
+    
+    winLossRate.filter = function(match){
+        return true;
+    }
+    
+    winLossRate.process = function(match){
+        var win = winLossRate.win
+        var loss = winLossRate.loss
+        var s = { me: 0, opponent: 0 }
+        match.sets.forEach(function(set){
+            win.games += set.me
+            loss.games += set.opponent
+            if(set.me > set.opponent)
+                s.me += 1
+            else
+                s.opponent += 1
+        });
+        win.set += s.me
+        loss.set += s.opponent
+        if(s.me > s.opponent)
+            win.match += 1
+        else
+            loss.match += 1
+    }
+    
+    winLossRate.loop = function(data){
+        winLossRate.data = data
+        winLossRate.win = { match: 0, set: 0, games: 0 }
+        winLossRate.loss = { match: 0, set: 0, games: 0 }
+        data.matches.filter(winLossRate.filter).forEach(winLossRate.process)
+    }
+    winLossRate.loop(data)
+    
+    winLossRate.json = function(){
+        var data = []
+        data[0] = { name: "win", value: winLossRate.win }
+        data[1] = { name: "loss", value: winLossRate.loss }
+        return data;
+    }
+    
+    processData(winLossRate)
+});
+
+function processData(winLossRate) {
+
+    visualizeData(winLossRate)
+}
+
+function visualizeData(winLossRate) {
+    var arc = d3.svg.arc()
+        .outerRadius(radius - 20)
+        .innerRadius(innerRadius);
+
+    var labelArc = d3.svg.arc()
+        .outerRadius(radius - 40)
+        .innerRadius(innerRadius);
+
+    var pie = d3.layout.pie()
+        .sort(null)
+        .value(function(d){ return d.value[winLossRate.accessor]; });
+
+    var g = svg.selectAll(".arc")
+        .data(pie(winLossRate.json()))
+        .enter().append("g")
+        .attr("class", "arc")
+        .attr("class", function(d){ return d.data.name + " arc"; })
+        .on("mouseover", function(d){
+            arc.outerRadius(radius - 10)
+            d3.select(this)
+                .attr("class", function(d){ return d.data.name + " arc hover"; })
+                .select("path")
+                .attr("d", arc)
+        })
+        .on("mouseout", function(d) {
+            arc.outerRadius(radius - 20)
+            d3.select(this)
+                .attr("class", function(d){ return d.data.name + " arc"; })
+                .select("path")
+                .attr("d", arc)
+        });
+
+    g.append("path")
+        .attr("d", arc)
+
+    g.append("text")
+        .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+        .attr("dy", ".35em")
+        .text(function(d) { return d.data.value[winLossRate.accessor]; });
+
+    var middle = svg.append("g")
+        .attr("class", "rate")
+        .on("mouseover", function(d){
+            d3.select(this)
+                .attr("class", "rate hover")
+                .select("circle")
+                .attr("r", innerRadius + 10);
+        })
+        .on("mouseout", function(d){
+            d3.select(this)
+                .attr("class", "rate")
+                .select("circle")
+                .attr("r", innerRadius -2);
+        });
+
+    middle.append("circle")
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .attr("r", innerRadius -2); 
+
+    middle.append("text")
+        .attr("dx", 0)
+        .attr("dy", 0)
+        .append("tspan")
+        .text("Win/Loss Rate:")
+        .append("tspan")
+        .attr("x", 0)
+        .attr("y", "1.5em")
+        .text(Math.round(100*winLossRate.win[winLossRate.accessor]/winLossRate.loss[winLossRate.accessor]) + "%");
+}
+    
+</script>
+</body>
+</html>
