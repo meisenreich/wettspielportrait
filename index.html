@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <style>
-    
+/* https://color.adobe.com/de/bright-diagram-1-color-theme-7328274/edit/?copy=true&base=2&rule=Custom&selected=2&name=Kopie%20von%20bright%20diagram%201&mode=rgb&rgbvalues=0.0117647,0.603922,0.839216,0.803922,0.0745098,0.0705882,0.517647,0.698039,0.0980392,0.905882,0.309804,0.576471,0.901961,0.337255,0.0705882&swatchOrder=0,1,2,3,4 */
     body {
         background: url('bg4.jpg');
     }
@@ -27,11 +27,11 @@
     }
     
     .win {
-        fill: #225D23;
+        fill: #84B219;
     }
     
     .loss {
-        fill: #5a2910;
+        fill: #CD1312;
     }
     
     text {
@@ -69,11 +69,25 @@
 <body>
 <div id="pie">
 </div>
+<div id="configuration">
+    <select id="type" name="type">
+        <option value="singleDouble" selected>Einzel/Doppel</option>
+        <option value="single">Einzel</option>
+        <option value="double">Doppel</option>
+    </select>
+    <select id="gameSetMatch" name="gameSetMatch">
+        <option value="game">Game</option>
+        <option value="set">Set</option>
+        <option value="match" selected>Match</option>
+    </select>
+    <select id="year" name="year">
+    </select>
+</div>
 <script>
 var width = 960,
-    height = 500,
+    height = 550,
     radius = Math.min(width, height) / 2,
-    innerRadius = radius *2/5;
+    innerRadius = radius *3/5;
 
 var svg = d3.select("#pie").append("svg")
     .attr("width", width)
@@ -85,8 +99,9 @@ d3.json("data.json", function(error, data){
     if(error) throw error;
     
     winLossRate = {
-        win: { match: 0, set: 0, games: 0 },
-        loss: { match: 0, set: 0, games: 0 },
+        win: { match: 0, set: 0, game: 0 },
+        loss: { match: 0, set: 0, game: 0 },
+        data: data,
         accessor: "match"
     }
     
@@ -99,8 +114,8 @@ d3.json("data.json", function(error, data){
         var loss = winLossRate.loss
         var s = { me: 0, opponent: 0 }
         match.sets.forEach(function(set){
-            win.games += set.me
-            loss.games += set.opponent
+            win.game += set.me
+            loss.game += set.opponent
             if(set.me > set.opponent)
                 s.me += 1
             else
@@ -114,13 +129,12 @@ d3.json("data.json", function(error, data){
             loss.match += 1
     }
     
-    winLossRate.loop = function(data){
-        winLossRate.data = data
-        winLossRate.win = { match: 0, set: 0, games: 0 }
-        winLossRate.loss = { match: 0, set: 0, games: 0 }
+    winLossRate.loop = function(){
+        winLossRate.win = { match: 0, set: 0, game: 0 }
+        winLossRate.loss = { match: 0, set: 0, game: 0 }
         data.matches.filter(winLossRate.filter).forEach(winLossRate.process)
     }
-    winLossRate.loop(data)
+    winLossRate.loop()
     
     winLossRate.json = function(){
         var data = []
@@ -133,51 +147,172 @@ d3.json("data.json", function(error, data){
 });
 
 function processData(winLossRate) {
-
+    
     visualizeData(winLossRate)
 }
 
 function visualizeData(winLossRate) {
-    var arc = d3.svg.arc()
+    var viz = {};
+
+    viz.arc = d3.svg.arc()
         .outerRadius(radius - 20)
         .innerRadius(innerRadius);
 
-    var labelArc = d3.svg.arc()
-        .outerRadius(radius - 40)
-        .innerRadius(innerRadius);
+    viz.labelArc = d3.svg.arc()
+        .outerRadius(radius - 35)
+        .innerRadius(innerRadius+15);
 
-    var pie = d3.layout.pie()
+    viz.pie = d3.layout.pie()
         .sort(null)
         .value(function(d){ return d.value[winLossRate.accessor]; });
 
-    var g = svg.selectAll(".arc")
-        .data(pie(winLossRate.json()))
-        .enter().append("g")
+    var g = svg.datum(winLossRate.json()).selectAll(".arc")
+//         .data(pie(winLossRate.json()))
+        .data(viz.pie)
+      .enter().append("g")
         .attr("class", "arc")
         .attr("class", function(d){ return d.data.name + " arc"; })
-        .on("mouseover", function(d){
-            arc.outerRadius(radius - 10)
-            d3.select(this)
-                .attr("class", function(d){ return d.data.name + " arc hover"; })
-                .select("path")
-                .attr("d", arc)
-        })
-        .on("mouseout", function(d) {
-            arc.outerRadius(radius - 20)
-            d3.select(this)
-                .attr("class", function(d){ return d.data.name + " arc"; })
-                .select("path")
-                .attr("d", arc)
-        });
+        .on("mouseover", mouseoverArc )
+        .on("mouseout", mouseoutArc );
+    
+    function mouseoverArc(){
+        viz.arc.outerRadius(radius - 10)
+        d3.select(this)
+            .attr("class", function(d){ return d.data.name + " arc hover"; })
+            .select("path")
+            .attr("d", viz.arc);
+    }
+    
+    function mouseoutArc(){
+        viz.arc.outerRadius(radius - 20)
+        d3.select(this)
+            .attr("class", function(d){ return d.data.name + " arc"; })
+            .select("path")
+            .attr("d", viz.arc)
+    }
 
     g.append("path")
-        .attr("d", arc)
+        .attr("d", viz.arc)
+        .each(function(d) { this._current = d; }); // store the initial angles
 
-    g.append("text")
-        .attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
+    var text = g.append("text")
+        .attr("transform", function(d) { return "translate(" + viz.labelArc.centroid(d) + ")"; })
         .attr("dy", ".35em")
         .text(function(d) { return d.data.value[winLossRate.accessor]; });
 
+    d3.select("select#gameSetMatch")
+        .on("change", changeGameSetMatch);
+
+    function changeGameSetMatch(){
+        var data = d3.select("select#gameSetMatch").property("value");
+        winLossRate.accessor = data;
+        
+        viz.pie.value(function(d) { return d.value[winLossRate.accessor]; }); // change the value function
+        g = g.data(viz.pie); // compute the new angles
+        g.select("path").transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+        
+        g.on("mouseover", function(){
+                viz.arc.outerRadius(radius - 10)
+                d3.select(this)
+                    .attr("class", function(d){ return d.data.name + " arc"; })
+                  .select("path")
+                    .attr("d", viz.arc)
+            })
+            .on("mouseout", function(){
+                viz.arc.outerRadius(radius - 20)
+                d3.select(this)
+                    .attr("class", function(d){ return d.data.name + " arc"; })
+                  .select("path")
+                    .attr("d", viz.arc)
+            });
+        
+        g.select("text")
+            .text(function(d) { return d.data.value[winLossRate.accessor]; })
+            .transition()
+            .duration(850)
+            .attr("transform", function(d) { return "translate(" + viz.labelArc.centroid(d) + ")"; });
+        
+        d3.select(".rate").selectAll("tspan:nth-child(2)")
+            .transition()
+            .duration(400)
+            .tween("text", function(){
+                var rate = Math.round(100*winLossRate.win[winLossRate.accessor]/(winLossRate.loss[winLossRate.accessor]+winLossRate.win[winLossRate.accessor])),
+                    i = d3.interpolate(this.textContent.split("%")[0], rate);
+                
+                return function(t) {
+                    this.textContent = Math.round(i(t)) + "%";
+                }
+            });
+        }
+        
+    // Store the displayed angles in _current.
+    // Then, interpolate from _current to the new angles.
+    // During the transition, _current is updated in-place by d3.interpolate.
+    function arcTween(a) {
+        var i = d3.interpolate(this._current, a);
+        this._current = i(0);
+        return function(t) {
+            return viz.arc(i(t));
+        };
+    }
+
+    d3.select("select#type")
+        .on("change", changeDataFilter);
+    
+    function changeDataFilter(){
+        var src = d3.select(this).attr("id") === "type" ? "type" : "year"
+        var type = d3.select("select#type").property("value")
+        var year = d3.select("select#year").property("value")
+        var filter = []
+        if(type === "single"){
+            filter.push(function(match){
+                return match.type === "singles" ? true : false;
+            });
+        }
+        else if(type === "double"){
+            filter.push(function(match){
+                return match.type === "doubles" ? true : false;
+            });
+        }
+        else if(type === "singleDouble"){
+            filter.push(function(match){
+                if(match.type === "doubles" || match.type === "singles"){
+                    return true;
+                }
+                else {
+                    return false;
+                }
+            });
+        }
+        
+        if(year !== "all"){
+            filter.push(function(match){
+                var format = d3.time.format("%Y-%m-%dT%H:%M")
+                var newYear = format.parse(year + "-01-01T00:00")
+                var silvester = format.parse(year + "-12-31T00:00")
+                var matchDate = format.parse(match.date)
+                if(newYear < matchDate && matchDate < silvester){
+                    return true;
+                }
+                else {
+                    return false;
+                }
+                
+            });
+        }
+        
+        //TODO
+        winLossRate.filter = function(match){
+            return filter.every(function(f){ return f(match); }); 
+        }
+        winLossRate.loop();
+        svg.datum(winLossRate.json());
+        changeGameSetMatch();
+    }
+    
+    d3.select("select#year")
+        .on("change", changeDataFilter);
+    
     var middle = svg.append("g")
         .attr("class", "rate")
         .on("mouseover", function(d){
@@ -198,17 +333,40 @@ function visualizeData(winLossRate) {
         .attr("cy", 0)
         .attr("r", innerRadius -2); 
 
-    middle.append("text")
+    var middleText = middle.append("text")
         .attr("dx", 0)
-        .attr("dy", 0)
-        .append("tspan")
-        .text("Win/Loss Rate:")
-        .append("tspan")
+        .attr("dy", 0);
+    
+    middleText.append("tspan")
+        .text("Win Rate:");
+    
+    middleText.append("tspan")
         .attr("x", 0)
         .attr("y", "1.5em")
-        .text(Math.round(100*winLossRate.win[winLossRate.accessor]/winLossRate.loss[winLossRate.accessor]) + "%");
-}
+        .text(Math.round(100*winLossRate.win[winLossRate.accessor]/(winLossRate.loss[winLossRate.accessor]+winLossRate.win[winLossRate.accessor])) + "%");
     
+    var format = d3.time.format("%Y-%m-%dT%H:%M")
+    var years = winLossRate.data.matches.map(function(match){ return match.date; })
+        .map(format.parse)
+        .map(function(date){ return date.getFullYear(); });
+    var uniqueYears = years.filter(function(item, pos, self) {
+        return self.indexOf(item) == pos;
+    });
+    d3.select("select#year")
+      .selectAll("option")
+        .data(uniqueYears)
+      .enter().append("option")
+        .attr("value", function(d){ return d; })
+        .text(function(d){ return d; })
+    
+    var yearRange = d3.extent(years)
+    d3.select("select#year")
+      .append("option")
+        .attr("value", "all")
+        .text(yearRange[0] + " - " + yearRange[1])
+        .property("selected", true);
+}
+
 </script>
 </body>
 </html>

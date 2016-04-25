@@ -3,98 +3,98 @@
     "id": 19006429,
     "matches": [
         {
-            "date": "20150712T13:00:000Z",
+            "date": "2015-07-12T13:00",
             "type": "singles",
             "sets": [{"me": 3, "opponent": 6},
                    {"me": 2, "opponent": 6}]
         },
         {
-            "date": "20150719T13:00:000Z",
+            "date": "2015-07-19T13:00",
             "type": "singles",
             "sets": [{"me": 6, "opponent": 3},
                    {"me": 6, "opponent": 0}]
         },
         {
-            "date": "20150712T13:00:000Z",
+            "date": "2015-07-12T13:00",
             "type": "doubles",
             "sets": [{"me": 5, "opponent": 7},
                    {"me": 6, "opponent": 7}]
         },
         {
-            "date": "20150719T13:00:000Z",
+            "date": "2015-07-19T13:00",
             "type": "doubles",
             "sets": [{"me": 3, "opponent": 6},
                    {"me": 2, "opponent": 6}]
         },
         {
-            "date": "20120624T13:00:000Z",
+            "date": "2012-06-24T13:00",
             "type": "singles",
             "sets": [{"me": 0, "opponent": 6},
                    {"me": 0, "opponent": 6}]
         },
         {
-            "date": "20120701T13:00:000Z",
+            "date": "2012-07-01T13:00",
             "type": "singles",
             "sets": [{"me": 1, "opponent": 6},
                    {"me": 2, "opponent": 6}]
         },
         {
-            "date": "20120708T13:00:000Z",
+            "date": "2012-07-08T13:00",
             "type": "singles",
             "sets": [{"me": 3, "opponent": 6},
                    {"me": 1, "opponent": 6}]
         },
         {
-            "date": "20120624T13:00:000Z",
+            "date": "2012-06-24T13:00",
             "type": "doubles",
             "sets": [{"me": 0, "opponent": 6},
                    {"me": 0, "opponent": 6}]
         },
         {
-            "date": "20120701T13:00:000Z",
+            "date": "2012-07-01T13:00",
             "type": "doubles",
             "sets": [{"me": 5, "opponent": 7},
                    {"me": 5, "opponent": 7}]
         },
         {
-            "date": "20120708T13:00:000Z",
+            "date": "2012-07-08T13:00",
             "type": "doubles",
             "sets": [{"me": 7, "opponent": 6},
                    {"me": 1, "opponent": 6},
                    {"me": 3, "opponent": 10}]
         },
         {
-            "date": "20110508T14:00:000Z",
+            "date": "2011-05-08T14:00",
             "type": "singles",
             "sets": [{"me": 0, "opponent": 6},
                    {"me": 0, "opponent": 6}]
         },
         {
-            "date": "20110515T14:00:000Z",
+            "date": "2011-05-15T14:00",
             "type": "singles",
             "sets": [{"me": 0, "opponent": 6},
                    {"me": 1, "opponent": 6}]
         },
         {
-            "date": "20110612T14:00:000Z",
+            "date": "2011-06-12T14:00",
             "type": "singles",
             "sets": [{"me": 1, "opponent": 6},
                    {"me": 1, "opponent": 6}]
         },
         {
-            "date": "20110508T14:00:000Z",
+            "date": "2011-05-08T14:00",
             "type": "doubles",
             "sets": [{"me": 0, "opponent": 6},
                    {"me": 1, "opponent": 6}]
         },
         {
-            "date": "20110515T14:00:000Z",
+            "date": "2011-05-15T14:00",
             "type": "doubles",
             "sets": [{"me": 3, "opponent": 6},
                    {"me": 1, "opponent": 6}]
         },
         {
-            "date": "20110612T14:00:000Z",
+            "date": "2011-06-12T14:00",
             "type": "singles",
             "sets": [{"me": 1, "opponent": 6},
                    {"me": 2, "opponent": 6}]
