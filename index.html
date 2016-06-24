@@ -65,6 +65,9 @@
     }
     </style>
 <script src="//d3js.org/d3.v3.min.js"></script>
+<script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
+<script src="wgxpath.install.js"></script>
+<script src="jquery.xdomainajax.js"></script>
 </head>
 <body>
 <div id="pie">
@@ -84,6 +87,20 @@
     </select>
 </div>
 <script>
+//var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2015&person=3754594&club=32867&mode=CHAMPIONSHIP&targetFed=BAD'
+//var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2016&person=3753401&club=32867'
+var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2016&person=3754568&club=32867'
+var data = { "matches": []}
+
+$.ajax({
+    url: url,
+    type: 'GET',
+    success: function(res) {
+        var html = $(res)[0].responseText
+        createDataSet(html, url)
+    }
+})
+
 var width = 960,
     height = 550,
     radius = Math.min(width, height) / 2,
@@ -95,10 +112,135 @@ var svg = d3.select("#pie").append("svg")
   .append("g")
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
 
-d3.json("data.json", function(error, data){
-    if(error) throw error;
+var parseQueryString = function( queryString ) {
+    var params = {}, queries, temp, i, l;
+
+    // Split into key/value pairs
+    queries = queryString.split("&");
+
+    // Convert the array of strings into an object
+    for ( i = 0, l = queries.length; i < l; i++ ) {
+        temp = queries[i].split('=');
+        params[temp[0]] = temp[1];
+    }
+
+    return params;
+};
+
+var toQueryString = function( params ) {
+    var query = "?"
     
-    winLossRate = {
+    for (var property in params) {
+        if (params.hasOwnProperty(property)) {
+            query = query + property + "=" + params[property] + "&"
+        }
+    }
+    
+    query = query.substring(0,query.length-1)
+    
+    return query
+}
+
+function createDataSet(html,url){
+    var a = $('<a>', { href:url } )[0];
+    var params = parseQueryString($(a)[0].search.substring(1));
+    wgxpath.install()
+//     html = html.replace(/<img\b[^>]*>/ig, '')
+    var parser = new DOMParser()
+    var doc = parser.parseFromString(html, 'text/xml')
+    var name = document.evaluate("//div[@id='content-row2']/h1",doc,null,XPathResult.ANY_TYPE,null)
+    name = name.iterateNext()
+    name = $(name).text()
+    name = name.trim()
+    name = name.split('\n')[0]
+    data.name = name
+
+    var seasons = document.evaluate("//div[@id='content-row2']/div[@id='subtabs']/ul/li/a/text()",doc,null,XPathResult.ANY_TYPE,null)
+    var semaphore = 0
+    var season = seasons.iterateNext()
+    while(season){
+        season = $(season).text()
+        var year = season.split(" ")[1]
+        if(year !== "2003" && year !== "2002"){
+            if(season.startsWith("Sommer")){
+                params["season"]= "Sommer+"+year
+            }
+            else if(season.startsWith("Winter")){
+                params["season"]= "Winter+"+encodeURIComponent(year)
+            }
+            var seasonUrl = $(a)[0].protocol + "//" + $(a)[0].hostname + $(a)[0].port + $(a)[0].pathname + toQueryString(params)
+            semaphore++
+            $.ajax({
+                url: seasonUrl,
+                type: 'GET',
+                success: function(res) {
+                    var html = $(res)[0].responseText;
+                    dataFromHtml(html);
+                    semaphore--;
+                }
+            });
+        }
+        season = seasons.iterateNext()
+    }
+}
+
+$(document).ajaxStop(function(){
+    processData(data)
+});
+
+function dataFromHtml(html,matches){
+    var parser = new DOMParser()
+    var doc = parser.parseFromString(html, 'text/xml')
+    var year = document.evaluate("//div[@id='content-row2']/div[@id='subtabs']/ul/li[@id='tabSelected']/a",doc,null,XPathResult.ANY_TYPE,null)
+    year = year.iterateNext()
+    year = $(year).text().split(" ")[1]
+    var trs = document.evaluate("//tr/td/text()[contains(.,'."+year+"')]/../..", doc, null, XPathResult.ANY_TYPE, null)
+    if(year.includes("/")){
+        trs = document.evaluate("//tr/td/text()[contains(.,'."+year.split("/")[0]+"') or contains(.,'."+year.split("/")[1]+"')]/../..", doc, null, XPathResult.ANY_TYPE, null)
+    }
+    var tr = trs.iterateNext()
+    while(tr){
+        var result = document.evaluate(".//td[4]", tr, null, XPathResult.ANY_TYPE, null)
+        result = result.iterateNext()
+        var sets = $(result).text().trim().split(" ")
+        var match = { "sets": []}
+        if(sets.length !== 0 && sets[0] !== ""){
+            result = document.evaluate(".//td[1]", tr, null, XPathResult.ANY_TYPE, null)
+            result = result.iterateNext()
+            result = $(result).text().trim()
+            var time = result.split(" ")
+            var d = time[0].split(".")
+            var t = time[1].split(":")
+            var utc = new Date(Date.UTC(d[2], d[1]-1, d[0], t[0], t[1]))
+            match.date = utc.toISOString()
+            result = document.evaluate(".//td[2]", tr, null, XPathResult.ANY_TYPE, null)
+            result = result.iterateNext()
+            if($(result).html().includes("<br/>")){
+                match.type = "doubles"
+            }
+            else{
+                match.type = "singles"
+            }
+            result = $(result).text().trim()
+            var home = result.includes(data.name)
+            for(var i=0; i < sets.length; i++){
+                var set = sets[i].split(":").map(function(i){ return parseInt(i); })
+                if(home){
+                    match.sets.push({"me": set[0], "opponent": set[1]})
+                }
+                else{
+                    match.sets.push({"me": set[1], "opponent": set[0]})
+                }
+            }
+            data.matches.push(match)
+        }
+
+        tr = trs.iterateNext()
+    }
+}
+
+function processData(data) {
+    var winLossRate = {
         win: { match: 0, set: 0, game: 0 },
         loss: { match: 0, set: 0, game: 0 },
         data: data,
@@ -116,17 +258,21 @@ d3.json("data.json", function(error, data){
         match.sets.forEach(function(set){
             win.game += set.me
             loss.game += set.opponent
-            if(set.me > set.opponent)
+            if(set.me > set.opponent){
                 s.me += 1
-            else
+            }
+            else{
                 s.opponent += 1
+            }
         });
         win.set += s.me
         loss.set += s.opponent
-        if(s.me > s.opponent)
+        if(s.me > s.opponent){
             win.match += 1
-        else
+        }
+        else{
             loss.match += 1
+        }
     }
     
     winLossRate.loop = function(){
@@ -142,11 +288,6 @@ d3.json("data.json", function(error, data){
         data[1] = { name: "loss", value: winLossRate.loss }
         return data;
     }
-    
-    processData(winLossRate)
-});
-
-function processData(winLossRate) {
     
     visualizeData(winLossRate)
 }
@@ -290,7 +431,7 @@ function visualizeData(winLossRate) {
                 var format = d3.time.format("%Y-%m-%dT%H:%M")
                 var newYear = format.parse(year + "-01-01T00:00")
                 var silvester = format.parse(year + "-12-31T00:00")
-                var matchDate = format.parse(match.date)
+                var matchDate = new Date(match.date) //format.parse(match.date)
                 if(newYear < matchDate && matchDate < silvester){
                     return true;
                 }
@@ -301,7 +442,6 @@ function visualizeData(winLossRate) {
             });
         }
         
-        //TODO
         winLossRate.filter = function(match){
             return filter.every(function(f){ return f(match); }); 
         }
@@ -346,8 +486,8 @@ function visualizeData(winLossRate) {
         .text(Math.round(100*winLossRate.win[winLossRate.accessor]/(winLossRate.loss[winLossRate.accessor]+winLossRate.win[winLossRate.accessor])) + "%");
     
     var format = d3.time.format("%Y-%m-%dT%H:%M")
-    var years = winLossRate.data.matches.map(function(match){ return match.date; })
-        .map(format.parse)
+    var years = winLossRate.data.matches.map(function(match){ return new Date(match.date); })
+        //.map(format.parse)
         .map(function(date){ return date.getFullYear(); });
     var uniqueYears = years.filter(function(item, pos, self) {
         return self.indexOf(item) == pos;
