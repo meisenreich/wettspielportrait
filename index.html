@@ -2,17 +2,38 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
 /* https://color.adobe.com/de/bright-diagram-1-color-theme-7328274/edit/?copy=true&base=2&rule=Custom&selected=2&name=Kopie%20von%20bright%20diagram%201&mode=rgb&rgbvalues=0.0117647,0.603922,0.839216,0.803922,0.0745098,0.0705882,0.517647,0.698039,0.0980392,0.905882,0.309804,0.576471,0.901961,0.337255,0.0705882&swatchOrder=0,1,2,3,4 */
-    body {
-        background: url('bg4.jpg');
-    }
     
+    #configuration {
+        margin: 25px;
+    }
+
+    #configuration select {
+        width: 100%;
+        display: block;
+        padding: 5px;
+        margin: 7px;
+    }
+
     #pie {
         margin: 10px auto;
-        background: white;
-        max-width: 1010px;
-        border-radius: 10px;
+        background: #f7f7f9;
+        border: 1px solid #ddd;
+        border-radius: 4px 4px 0 0;
+        -webkit-box-shadow: none;
+        box-shadow: none;
+        border-color: #e5e5e5 #eee #eee;
+    }
+
+    #pie h2 {
+        padding-left: 30px;
+    }
+
+    #pie svg {
+        display: block;
+        margin: 0 auto;
     }
     
     .arc path {
@@ -68,49 +89,92 @@
 <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
 <script src="wgxpath.install.js"></script>
 <script src="jquery.xdomainajax.js"></script>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
 </head>
 <body>
-<div id="pie">
+<div class="container">
+    <h1>Betrachte dein Wettspielportrait in einem Kreisdiagramm</h1>
+    <p>Kopiere dazu die Url deines Wettspielportrait in das Eingabefeld hierunter. Sobald die Daten geladen sind kannst du dein Wettspielportrait im Kreisdiagramm analysieren.</p>
+    <div class="container">
+        <div class="input-group" id="athlete">
+          <input type="text" class="form-control" placeholder="Einfügen des Links zum Wettspielportrait bei baden.liga.nu">
+          <span class="input-group-btn">
+            <button class="btn btn-default" type="button">Go!</button>
+          </span>
+        </div><!-- /input-group -->
+    </div>
 </div>
-<div id="configuration">
-    <select id="type" name="type">
-        <option value="singleDouble" selected>Einzel/Doppel</option>
-        <option value="single">Einzel</option>
-        <option value="double">Doppel</option>
-    </select>
-    <select id="gameSetMatch" name="gameSetMatch">
-        <option value="game">Game</option>
-        <option value="set">Set</option>
-        <option value="match" selected>Match</option>
-    </select>
-    <select id="year" name="year">
-    </select>
+<div class="container">
+    <div id="pie">
+        <h2>Maximilian Eisenreich</h2>
+        <svg></svg>
+        <div id="configuration">
+            <select id="type" name="type">
+                <option value="singleDouble" selected>Einzel/Doppel</option>
+                <option value="single">Einzel</option>
+                <option value="double">Doppel</option>
+            </select>
+            <select id="gameSetMatch" name="gameSetMatch">
+                <option value="game">Game</option>
+                <option value="set">Set</option>
+                <option value="match" selected>Match</option>
+            </select>
+            <select id="year" name="year">
+            </select>
+        </div>
+    </div>
+</div>
+<div class="container" id="annotations">
+    <ul>
+        <li>Matches bei denen der Gegner nicht angetreten ist (n.a.) werden in der Berechnung nicht berücksichtigt.</li>
+        <li>Die Jahresfilter beziehen sich auf das Kalenderjahr.</li>
+        <li>Die Gesamtbilanz (nuLiga-Bilanz) muss nicht übereinstimmen, da Matches aus den Jahren die nur in dem Portal "mybigpoint" aufgeführt sind nicht geladen werden können.</li>
+        <li>Der Code kann hier betrachtet werden: <a href=""></a></li>
+    </ul>
 </div>
 <script>
-//var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2015&person=3754594&club=32867&mode=CHAMPIONSHIP&targetFed=BAD'
+var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2015&person=3754594&club=32867&mode=CHAMPIONSHIP&targetFed=BAD'
 //var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2016&person=3753401&club=32867'
-var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2016&person=3754568&club=32867'
-var data = { "matches": []}
+//var url = 'http://baden.liga.nu/cgi-bin/WebObjects/nuLigaTENDE.woa/wa/playerPortrait?federation=BAD&season=Sommer+2016&person=3754568&club=32867'
 
-$.ajax({
-    url: url,
-    type: 'GET',
-    success: function(res) {
-        var html = $(res)[0].responseText
-        createDataSet(html, url)
-    }
-})
+var loadData = function(url){
+    data = { "matches": []}
+    $.ajax({
+        url: url,
+        type: 'GET',
+        success: function(res) {
+            var html = $(res)[0].responseText
+            createDataSet(html, url)
+        }
+    })
+}
+loadData(url)
 
-var width = 960,
+var width = 550,
     height = 550,
     radius = Math.min(width, height) / 2,
     innerRadius = radius *3/5;
 
-var svg = d3.select("#pie").append("svg")
+var svg = d3.select("#pie svg")
     .attr("width", width)
     .attr("height", height)
   .append("g")
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+$("#athlete input").on("keydown", function(ev){
+    if(ev.which === 13) {
+        var url = $("#athlete input").val()
+        loadData(url)
+    }
+});
+$("#athlete button").on("click", function(){
+    var url = $("#athlete input").val()
+    loadData(url)
+});
 
 var parseQueryString = function( queryString ) {
     var params = {}, queries, temp, i, l;
@@ -156,7 +220,6 @@ function createDataSet(html,url){
     data.name = name
 
     var seasons = document.evaluate("//div[@id='content-row2']/div[@id='subtabs']/ul/li/a/text()",doc,null,XPathResult.ANY_TYPE,null)
-    var semaphore = 0
     var season = seasons.iterateNext()
     while(season){
         season = $(season).text()
@@ -169,24 +232,22 @@ function createDataSet(html,url){
                 params["season"]= "Winter+"+encodeURIComponent(year)
             }
             var seasonUrl = $(a)[0].protocol + "//" + $(a)[0].hostname + $(a)[0].port + $(a)[0].pathname + toQueryString(params)
-            semaphore++
             $.ajax({
                 url: seasonUrl,
                 type: 'GET',
                 success: function(res) {
                     var html = $(res)[0].responseText;
                     dataFromHtml(html);
-                    semaphore--;
                 }
             });
         }
         season = seasons.iterateNext()
     }
+    $(document).ajaxStop(function(){
+        processData(data)
+        $(document).ajaxStop(null)
+    });
 }
-
-$(document).ajaxStop(function(){
-    processData(data)
-});
 
 function dataFromHtml(html,matches){
     var parser = new DOMParser()
@@ -293,6 +354,9 @@ function processData(data) {
 }
 
 function visualizeData(winLossRate) {
+    d3.select("#pie h2").text(winLossRate.data.name)
+    d3.selectAll("#pie svg g g").remove()
+
     var viz = {};
 
     viz.arc = d3.svg.arc()
@@ -308,7 +372,6 @@ function visualizeData(winLossRate) {
         .value(function(d){ return d.value[winLossRate.accessor]; });
 
     var g = svg.datum(winLossRate.json()).selectAll(".arc")
-//         .data(pie(winLossRate.json()))
         .data(viz.pie)
       .enter().append("g")
         .attr("class", "arc")
@@ -487,11 +550,14 @@ function visualizeData(winLossRate) {
     
     var format = d3.time.format("%Y-%m-%dT%H:%M")
     var years = winLossRate.data.matches.map(function(match){ return new Date(match.date); })
-        //.map(format.parse)
         .map(function(date){ return date.getFullYear(); });
     var uniqueYears = years.filter(function(item, pos, self) {
         return self.indexOf(item) == pos;
     });
+    d3.select("select#year")
+      .selectAll("option")
+      .remove();
+
     d3.select("select#year")
       .selectAll("option")
         .data(uniqueYears)
